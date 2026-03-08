@@ -33,4 +33,5 @@ func main() {
 	if errShow2 != nil {
 		fmt.Println(errShow2)
 	}
+	fmt.Scan()
 }

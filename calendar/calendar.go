@@ -9,37 +9,49 @@ import (
 	"github.com/araddon/dateparse"
 )
 
-var eventsMap = make(map[string]events.Event)
-var TitlteErr = errors.New("cобытие с таким именем уже существует")
+var calendarEvents = make(map[string]events.Event)
+var TitleError = errors.New("cобытие с таким именем уже существует")
+var addEventError = errors.New("ошибка добавления события")
+var deleteError = errors.New("ошибка удаления события")
+var showError = errors.New("список событий пуст")
 
-func AddEvent(key string, e events.Event) {
-	eventsMap[key] = e
-	fmt.Println("Событие добавлено: ", e.Title)
+func AddEvent(name, date string) (events.Event, error) {
+	event, err := events.NewEvent(name, date)
+	if err != nil {
+		return events.Event{}, addEventError
+	}
+	calendarEvents[event.ID] = event
+	fmt.Println("Событие добавлено: ", event.Title)
+	return event, nil
 }
 
-func ShowEvents() {
+func ShowEvents() error {
+	if len(calendarEvents) == 0 {
+		return showError
+	}
 	fmt.Println("\nВсе события в календаре: ")
 	fmt.Println("▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼")
-	for _, event := range eventsMap {
+	for _, event := range calendarEvents {
 		fmt.Printf("\nНазвание события:  %s || Дата и время события:  %s ||", event.Title, event.StartAt)
 	}
 	fmt.Println("\n \n▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲")
+	return nil
 }
 
 func isTitleExist(title string) error {
-	if _, ok := eventsMap[title]; !ok {
-		return TitlteErr
+	if _, ok := calendarEvents[title]; !ok {
+		return TitleError
 	}
 	return nil
 }
 
-func DeleteEvent(key string) error {
-	err := isTitleExist(key)
+func DeleteEvent(name string) error {
+	err := isTitleExist(name)
 	if err != nil {
-		return err
+		return deleteError
 	}
-	delete(eventsMap, key)
-	fmt.Println("Успешно удалено!", key)
+	delete(calendarEvents, name)
+	fmt.Println("Успешно удалено!", name)
 	return nil
 }
 
@@ -52,7 +64,7 @@ func EditEvent(name, newTitle, dateStr string) error {
 	if err != nil {
 		return err
 	}
-	eventsMap[name] = events.Event{
+	calendarEvents[name] = events.Event{
 		Title:   newTitle,
 		StartAt: date,
 	}
@@ -61,13 +73,13 @@ func EditEvent(name, newTitle, dateStr string) error {
 }
 
 func fullValidation(name, title string) error {
-	if _, ok := eventsMap[name]; !ok {
-		return TitlteErr
+	if _, ok := calendarEvents[name]; !ok {
+		return TitleError
 	}
 	if ok := validation.IsValidateTitle(title); !ok {
 		return errors.New("введен некорректно заголовок")
 	}
-	if eventsMap[name].Title == title {
+	if calendarEvents[name].Title == title {
 		return errors.New("такой заголовок уже существует")
 	}
 	return nil

@@ -9,8 +9,6 @@ import (
 	"github.com/Kaktysfo/app/storage"
 )
 
-//var calendarEvents = make(map[string]*events.Event)
-
 var (
 	EventError      = errors.New("cобытие с таким именем уже существует")
 	addEventError   = errors.New("ошибка добавления события")
@@ -34,13 +32,13 @@ func NewCalendar(s *storage.Storage) *Calendar {
 	}
 }
 
-func (c *Calendar) AddEvent(name, date string) (*events.Event, error) {
+func (c *Calendar) AddEvent(name, date, pririty string) (*events.Event, error) {
 	for _, event := range c.calendarEvents {
 		if event.Title == name {
 			return nil, EventError
 		}
 	}
-	event, err := events.NewEvent(name, date)
+	event, err := events.NewEvent(name, date, pririty)
 	if err != nil {
 		return nil, addEventError
 	}
@@ -59,9 +57,10 @@ func (c *Calendar) ShowEvents() error {
 	fmt.Println("▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼")
 	for _, event := range c.calendarEvents {
 		fmt.Printf(
-			"\nНазвание события: %s || Дата и время события: %s ||",
+			"\nНазвание события: %s || Дата и время события: %s || Приоритет: %s",
 			event.Title,
 			event.StartAt,
+			event.Priority,
 		)
 	}
 
@@ -70,29 +69,36 @@ func (c *Calendar) ShowEvents() error {
 	return nil
 }
 
-func (c *Calendar) isEventExist(id string) error {
+func (c *Calendar) isEventExistByID(id string) error {
 	if _, ok := c.calendarEvents[id]; !ok {
 		return EventError
 	}
 	return nil
 }
 
-func (c *Calendar) DeleteEvent(name string) error {
-	err := c.isEventExist(name)
+func (c *Calendar) isEventExistByName(name string) (*events.Event, error) {
+	for id, event := range c.calendarEvents {
+		if event.Title == name {
+			return c.calendarEvents[id], nil
+		}
+	}
+	return nil, EventError
+}
+
+func (c *Calendar) DeleteEvent(name string) error { // не работает функция удаления
+	event, err := c.isEventExistByName(name)
 	if err != nil {
 		return deleteError
 	}
-	delete(c.calendarEvents, name)
-	fmt.Println("Успешно удалено!", name)
-	return nil
+	return c.DeleteEvent(event.ID)
 }
 
-func (c *Calendar) EditEvent(id, newTitle, dateStr string) error {
+func (c *Calendar) EditEvent(id, newTitle, dateStr, priority string) error {
 	e, exists := c.calendarEvents[id]
 	if !exists {
 		return errors.New("не удалось найти событие")
 	}
-	err := e.Update(newTitle, dateStr)
+	err := e.Update(newTitle, dateStr, priority)
 	if err != nil {
 		return err
 	}
